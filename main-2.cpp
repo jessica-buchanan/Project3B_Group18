@@ -494,46 +494,24 @@ int main() {
         int k = hashing(t, tableSize);
         Node* node = new Node(t,r,y,g);
         unorderedMap uM(k,node);
-        if (uM.calcLF(currentSize,tableSize) > 0.8) {
-            tableSize *= 2;
-            Node* newTable[tableSize];
-            //copy over elements
-            for (int i = 0; i < tableSize; i++) {
-                if (i < tableSize/2) {
-                    newTable[i] = table[i];
-                }
-                else {
-                    newTable[i] = nullptr;
-                }
-            }
-            if (newTable[k] != nullptr) {
-                newTable[k]->right = node;
+        if (table[k] != nullptr) {
+            if (table[k]->right == nullptr) {
+                table[k]->right = node;
             }
             else {
-                newTable[k] = node;
-                currentSize++;
+                Node* holder = table[k];
+                Node* j = nullptr;
+                while (holder != nullptr) {
+                    j = holder;
+                    holder = holder->right;
+                }
+                j->right = node;
             }
+
         }
         else {
-            if (table[k] != nullptr) {
-                if (table[k]->right == nullptr) {
-                    table[k]->right = node;
-                }
-                else {
-                    Node* holder = table[k];
-                    Node* j = nullptr;
-                    while (holder != nullptr) {
-                        j = holder;
-                        holder = holder->right;
-                    }
-                    j->right = node;
-                }
-
-            }
-            else {
-                table[k] = node;
-                currentSize++;
-            }
+            table[k] = node;
+            currentSize++;
         }
     }
     return 0;
