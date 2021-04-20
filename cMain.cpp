@@ -5,7 +5,13 @@
 #include <sstream>
 #include <vector>
 #include <time.h>
+#include <cstdlib>
+#include <ctime>
+#include <chrono>
 #include <stdio.h>
+#include <wx/stopwatch.h>
+#include <ctime>
+#include <chrono>
 
 using namespace std;
 
@@ -150,7 +156,6 @@ void Tree::ratingSearch(string r, Node* root, vector<Node*>& results)
         {
             results.push_back(root);
         }
-
         ratingSearch(r, root->left, results);
         ratingSearch(r, root->right, results);
     }
@@ -174,6 +179,7 @@ void Tree::recommendation(Node* root, vector<Node*>& results, string _genre, str
 }
 
 class unorderedMap {
+
 private:
     int lF = -1;
     int tableSize = 300; //starting table size
@@ -184,9 +190,12 @@ private:
 public:
     unorderedMap();
     unorderedMap(int, Node*);
+    vector<Node*> yearSearch(Node* table[], string _year, vector<Node*>& results);
 };
 
 int hashing(string&, int);
+
+
 unorderedMap::unorderedMap() {
     key = -1;
     data = nullptr;
@@ -195,6 +204,22 @@ unorderedMap::unorderedMap() {
 unorderedMap::unorderedMap(int key, Node* n) {
     this->key = key;
     data = n;
+}
+
+vector<Node*> unorderedMap::yearSearch(Node* table[], string _year, vector<Node*>& results)
+{
+    Node* temp;
+    for (int i = 0; i < 300; i++)
+    {
+        temp = table[i];
+        while (temp != nullptr)
+        {
+            if (temp->year == _year)
+                results.push_back(temp);
+            temp = temp->right;
+        }
+    }
+    return results;
 }
 
 int hashing(string& title, int size) {
@@ -217,7 +242,7 @@ wxBEGIN_EVENT_TABLE(cMain, wxFrame)
     EVT_BUTTON(10012, OnButtonClickedSearchRating)
 wxEND_EVENT_TABLE()
 
-Node* loadData(Tree& _movie)
+Node* loadData(Tree& _movie, unorderedMap& _map, Node _mapTable[])
 {
     fstream dvdFile;
     dvdFile.open("DVDlist.csv");
@@ -259,6 +284,7 @@ Node* loadData(Tree& _movie)
         int k = hashing(t, tableSize);
         Node* node = new Node(t, r, y, g);
         unorderedMap uM(k, node);
+        _map = uM;
 
         if (table[k] != nullptr) {
             if (table[k]->right == nullptr) {
@@ -280,18 +306,21 @@ Node* loadData(Tree& _movie)
             currentSize++;
         }
     }
+    _mapTable = *table;
     return root;
 
 }
 
 Node* table;
+Node* mapTable;
 Tree movie;
+unorderedMap map;
 
 cMain::cMain() : wxFrame(nullptr, wxID_ANY, "Movie Recommendation Generator", wxPoint(30, 40), wxSize(800, 800))
 {
-    table = loadData(movie);
+    table = loadData(movie, map, mapTable);
 
-	m_title = new wxStaticText(this, wxID_ANY, "Welcome to DVDFinder 5000!", wxPoint(250, 70), wxSize(50, 50));
+	m_title = new wxStaticText(this, wxID_ANY, "Welcome to the DVDFinder 5000!", wxPoint(250, 70), wxSize(50, 50));
 	m_question = new wxStaticText(this, wxID_ANY, "Do you want to search for a movie or receive a recommendation?", wxPoint(90, 100), wxSize(50, 50));
 	wxFont titleFont(15, wxFONTFAMILY_MODERN, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD);
 	wxFont questionFont(11, wxFONTFAMILY_MODERN, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_LIGHT);
@@ -364,7 +393,14 @@ void cMain::OnButtonClickedSearchTitle(wxCommandEvent& evt)
 {
     wxString wString(searchInfo->GetValue());
     string stdString = std::string(wString.mb_str());
+    wxStopWatch sw;
+
+    // BST function call
+    sw.Start(0);
     Node* temp = movie.findTitle(stdString, table);
+    wxLogMessage("BST search took %ldms in all ", sw.Time());
+    sw.Pause();
+
     if (temp != nullptr) {
         wxString mystring(temp->title);
         m_recs->AppendString(mystring);
@@ -382,8 +418,18 @@ void cMain::OnButtonClickedSearchYear(wxCommandEvent& evt)
 {
     wxString wString(searchInfo->GetValue());
     string stdString = std::string(wString.mb_str());
+
+    // BST Search
+    //vector<Node*> results;
+    //movie.yearSearch(stdString, table, results);
+
+    // Unordered function call
+    wxStopWatch sw;
+    sw.Start(0);
     vector<Node*> results;
-    movie.yearSearch(stdString, table, results);
+    map.yearSearch(&mapTable, stdString, results);
+    wxLogMessage("Unordered search took %ldms in all ", sw.Time());
+    sw.Pause();
 
     for (int i = 0; i < results.size(); i++) {
         wxString mystring(results.at(i)->title);
@@ -424,7 +470,9 @@ void cMain::OnButtonClickedSearchRating(wxCommandEvent& evt)
     wxString wString(searchInfo->GetValue());
     string stdString = std::string(wString.mb_str());
     vector<Node*> results;
+
     movie.ratingSearch(stdString, table, results);
+
 
     for (int i = 0; i < results.size(); i++) {
         wxString mystring(results.at(i)->title);
