@@ -365,7 +365,11 @@ void cMain::OnButtonClickedFindRec(wxCommandEvent& evt)
     string rString = std::string(ratingWx.mb_str());
     string yearString = std::string(yearWx.mb_str());
     
+    wxStopWatch sw;
+    sw.Start(0);
     movie.recommendation(table, results, genString, yearString, rString);
+    wxLogMessage("BST search took %ldms in all ", sw.Time());
+    sw.Pause();
     
     for (int i = 0; i < results.size(); i++) {
         wxString mystring(results.at(i)->title);
@@ -398,7 +402,7 @@ void cMain::OnButtonClickedSearchTitle(wxCommandEvent& evt)
     // BST function call
     sw.Start(0);
     Node* temp = movie.findTitle(stdString, table);
-    wxLogMessage("BST search took %ldms in all ", sw.Time());
+    wxLogMessage("BST recommendation generation took %ldms in all ", sw.Time());
     sw.Pause();
 
     if (temp != nullptr) {
@@ -420,15 +424,11 @@ void cMain::OnButtonClickedSearchYear(wxCommandEvent& evt)
     string stdString = std::string(wString.mb_str());
 
     // BST Search
-    //vector<Node*> results;
-    //movie.yearSearch(stdString, table, results);
-
-    // Unordered function call
+    vector<Node*> results;
     wxStopWatch sw;
     sw.Start(0);
-    vector<Node*> results;
-    map.yearSearch(&mapTable, stdString, results);
-    wxLogMessage("Unordered search took %ldms in all ", sw.Time());
+    movie.yearSearch(stdString, table, results);
+    wxLogMessage("BST took %ldms in all ", sw.Time());
     sw.Pause();
 
     for (int i = 0; i < results.size(); i++) {
